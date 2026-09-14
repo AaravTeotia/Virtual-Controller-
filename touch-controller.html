@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Touch Controller</title>
+
+<style>
+/* Exact visual match to the reference photo */
+:root {
+  --bg: #f2f2f2;
+  --btn: #1a1a1a;
+  --y-col: #FFD600;
+  --x-col: #2196F3;
+  --a-col: #4CAF50;
+  --b-col: #F44336;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+/* Base circular button */
+.btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: var(--btn);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.15);
+  z-index: 20;
+}
+
+.btn.active {
+  transform: translate(-50%, -50%) scale(0.92);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+  background: #111;
+}
+
+/* ========== LEFT SIDE ========== */
+#stick-left-zone {
+  left: 18%;
+  top: 58%;
+  width: 34vh;
+  height: 34vh;
+}
+#thumb-left {
+  width: 24vh;
+  height: 24vh;
+}
+
+/* D-pad (matches the photo: large black circle with + and blue glow) */
+#dpad-container {
+  position: absolute;
+  left: 18%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+  width: 28vh;
+  height: 28vh;
+  z-index: 25;
+  background: var(--btn);
+  border-radius: 50%;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.12);
+}
+
+.dpad-part {
+  position: absolute;
+  background: #2a2a2a;
+  border-radius: 1.2vh;
+  pointer-events: none;
+}
+.dpad-v {
+  top: 12%;
+  left: 38%;
+  width: 24%;
+  height: 76%;
+}
+.dpad-h {
+  top: 38%;
+  left: 12%;
+  width: 76%;
+  height: 24%;
+}
+
+/* Blue center glow exactly like photo */
+.dpad-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5.5vh;
+  height: 5.5vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, #5eb8ff 0%, #1e90ff 40%, transparent 75%);
+  box-shadow: 0 0 18px 4px #4da6ff, 0 0 8px #7ec8ff;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.dpad-touch {
+  position: absolute;
+  width: 33.3%;
+  height: 33.3%;
+  z-index: 3;
+}
+.dpad-touch.active {
+  background: rgba(255,255,255,0.18);
+}
+.dt-up    { top: 0; left: 33.3%; border-radius: 50% 50% 0 0; }
+.dt-down  { bottom: 0; left: 33.3%; border-radius: 0 0 50% 50%; }
+.dt-left  { top: 33.3%; left: 0; border-radius: 50% 0 0 50%; }
+.dt-right { top: 33.3%; right: 0; border-radius: 0 50% 50% 0; }
+
+/* LT / LB */
+#btn-lt {
+  left: 28%;
+  top: 22%;
+  width: 9.5vh;
+  height: 9.5vh;
+  font-size: 2.6vh;
+}
+#btn-lb {
+  left: 28%;
+  top: 38%;
+  width: 9.5vh;
+  height: 9.5vh;
+  font-size: 2.6vh;
+}
+
+/* ========== CENTER ========== */
+#btn-home {
+  left: 50%;
+  top: 18%;
+  width: 10vh;
+  height: 10vh;
+  background: #111;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+}
+#btn-home svg {
+  width: 5.5vh;
+  height: 5.5vh;
+}
+
+#btn-back {
+  left: 42%;
+  top: 48%;
+  width: 7vh;
+  height: 7vh;
+  font-size: 2.2vh;
+}
+#btn-start {
+  left: 58%;
+  top: 48%;
+  width: 7vh;
+  height: 7vh;
+  font-size: 2.2vh;
+}
+
+/* ========== RIGHT SIDE ========== */
+#btn-rt {
+  left: 72%;
+  top: 22%;
+  width: 9.5vh;
+  height: 9.5vh;
+  font-size: 2.6vh;
+}
+#btn-rb {
+  left: 72%;
+  top: 38%;
+  width: 9.5vh;
+  height: 9.5vh;
+  font-size: 2.6vh;
+}
+
+#stick-right-zone {
+  left: 78%;
+  top: 62%;
+  width: 32vh;
+  height: 32vh;
+}
+#thumb-right {
+  width: 22vh;
+  height: 22vh;
+  font-size: 9vh;
+  color: rgba(255,255,255,0.85);
+}
+
+/* ABXY cluster – diamond layout matching photo */
+.abxy {
+  width: 12.5vh;
+  height: 12.5vh;
+  font-size: 5.5vh;
+  font-weight: 900;
+}
+#btn-y { left: 78%; top: 28%; color: var(--y-col); }
+#btn-x { left: 70%; top: 46%; color: var(--x-col); }
+#btn-b { left: 86%; top: 46%; color: var(--b-col); }
+#btn-a { left: 78%; top: 64%; color: var(--a-col); }
+
+/* Analog stick zones */
+.stick-zone {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.stick-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--btn);
+  border-radius: 50%;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status & connection (kept identical) */
+#status {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.05);
+  font-size: 10px;
+  font-weight: bold;
+  color: #666;
+}
+#status.connected {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+#status.disconnected {
+  color: #F44336;
+  background: rgba(244, 67, 54, 0.1);
+}
+
+#connection-panel {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(255,255,255,.92);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  flex-direction: column;
+}
+#connection-panel.open { display: flex; }
+#pc-address {
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+  font-size: 16px;
+  width: 300px;
+  text-align: center;
+  margin-bottom: 15px;
+  outline: none;
+}
+#connect-btn {
+  padding: 15px 30px;
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  font-size: 16px;
+}
+
+#rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: #fff;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: bold;
+  font-size: 20px;
+}
+@media (orientation: portrait) {
+  #rotate-overlay { display: flex; }
+  #app { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="status" class="disconnected">offline</div>
+
+<div id="connection-panel">
+  <input id="pc-address" type="text" placeholder="192.168.1.100:5000">
+  <button id="connect-btn" type="button">CONNECT</button>
+</div>
+
+<div id="rotate-overlay"><p>Rotate to Landscape</p></div>
+
+<div id="app">
+
+  <!-- LEFT STICK (under the D-pad visual) -->
+  <div class="stick-zone" id="stick-left-zone">
+    <div class="stick-thumb" id="thumb-left"></div>
+  </div>
+
+  <!-- D-PAD – styled exactly like the photo -->
+  <div id="dpad-container">
+    <div class="dpad-part dpad-v"></div>
+    <div class="dpad-part dpad-h"></div>
+    <div class="dpad-center"></div>
+    
+    <div class="dpad-touch dt-up" data-btn="DPAD_UP"></div>
+    <div class="dpad-touch dt-down" data-btn="DPAD_DOWN"></div>
+    <div class="dpad-touch dt-left" data-btn="DPAD_LEFT"></div>
+    <div class="dpad-touch dt-right" data-btn="DPAD_RIGHT"></div>
+  </div>
+
+  <!-- LEFT BUMPERS -->
+  <div class="btn" id="btn-lt" data-btn="LT">LT</div>
+  <div class="btn" id="btn-lb" data-btn="LB">LB</div>
+
+  <!-- CENTER BUTTONS -->
+  <div class="btn" id="btn-home" data-btn="HOME">
+    <!-- Xbox-style green button -->
+    <svg viewBox="0 0 24 24" fill="#4CAF50" width="5.5vh" height="5.5vh">
+      <path d="M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.792-1.119 7.898-2.967a4.228 4.228 0 0 0-.344-.614c-2.533-4.166-5.162-8.403-5.162-8.403s-1.51 2.688-3.392 4.91c-1.035 1.244-2.027 2.19-2.027 2.19s-.54-.95-1.373-2.55C6.2 13.4 4.1 9.5 4.1 9.5s.2 4.2.002 11.533zM12 0C8.977 0 6.211 1.119 4.102 2.967c.11.192.23.393.344.614 2.533 4.166 5.162 8.403 5.162 8.403s1.51-2.688 3.392-4.91c1.035-1.244 2.027-2.19 2.027-2.19s.54.95 1.373 2.55C17.8 10.6 19.9 14.5 19.9 14.5s-.2-4.2-.002-11.533C17.789 1.119 15.023 0 12 0z"/>
+    </svg>
+  </div>
+  <div class="btn" id="btn-back" data-btn="BACK">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <rect x="3" y="6" width="18" height="12" rx="2"/>
+      <line x1="8" y1="10" x2="8" y2="14"/>
+    </svg>
+  </div>
+  <div class="btn" id="btn-start" data-btn="START">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <line x1="4" y1="7" x2="20" y2="7"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="17" x2="20" y2="17"/>
+    </svg>
+  </div>
+
+  <!-- RIGHT BUMPERS -->
+  <div class="btn" id="btn-rt" data-btn="RT">RT</div>
+  <div class="btn" id="btn-rb" data-btn="RB">RB</div>
+
+  <!-- RIGHT STICK (Punisher skull) -->
+  <div class="stick-zone" id="stick-right-zone">
+    <div class="stick-thumb" id="thumb-right">☠</div>
+  </div>
+
+  <!-- ABXY -->
+  <div class="btn abxy" id="btn-y" data-btn="Y">Y</div>
+  <div class="btn abxy" id="btn-x" data-btn="X">X</div>
+  <div class="btn abxy" id="btn-b" data-btn="B">B</div>
+  <div class="btn abxy" id="btn-a" data-btn="A">A</div>
+
+</div>
+
+<!-- socket.io library -->
+<script src="./socket.io.min.js"></script>
+
+<script>
+const statusEl = document.getElementById('status');
+const connectionPanel = document.getElementById('connection-panel');
+const pcAddressInput = document.getElementById('pc-address');
+const connectBtn = document.getElementById('connect-btn');
+let socket = null;
+
+function normalizeServerAddress(value){
+  value = (value || '').trim();
+  if(!value) return '';
+  if(!/^https?:\/\//i.test(value)) value = 'http://' + value;
+  try { const u = new URL(value); if(!u.port) u.port = '5000'; return u.origin; } catch { return ''; }
+}
+
+function setOffline(){
+  statusEl.textContent = 'offline';
+  statusEl.className = 'disconnected';
+}
+
+function connectToPC(){
+  const address = normalizeServerAddress(pcAddressInput.value);
+  if(!address || typeof io !== 'function'){
+    connectionPanel.classList.add('open');
+    return;
+  }
+  localStorage.setItem('controller_pc_address', address);
+  if(socket) { try { socket.disconnect(); } catch(e){} }
+  
+  statusEl.textContent = 'connecting...';
+  
+  socket = io(address, { transports: ['websocket', 'polling'], reconnection: true });
+  socket.on('connect', () => {
+    statusEl.textContent = 'Connected';
+    statusEl.className = 'connected';
+    connectionPanel.classList.remove('open');
+  });
+  socket.on('disconnect', setOffline);
+  socket.on('connect_error', () => {
+    statusEl.textContent = 'Error - Tap to retry';
+    statusEl.className = 'disconnected';
+  });
+}
+
+statusEl.addEventListener('click', () => {
+  pcAddressInput.value = localStorage.getItem('controller_pc_address') || '';
+  connectionPanel.classList.add('open');
+});
+
+connectBtn.addEventListener('click', connectToPC);
+const savedAddress = localStorage.getItem('controller_pc_address');
+if(savedAddress){ pcAddressInput.value = savedAddress; connectToPC(); } 
+else { connectionPanel.classList.add('open'); }
+
+function emit(event, data){ if(socket && socket.connected) socket.emit(event, data); }
+
+/* NORMAL BUTTONS */
+document.querySelectorAll('[data-btn]').forEach(el => {
+  const name = el.dataset.btn;
+  const press = e => { e.preventDefault(); el.classList.add('active'); emit('button', { name: name, pressed: true }); };
+  const release = e => { e.preventDefault(); el.classList.remove('active'); emit('button', { name: name, pressed: false }); };
+
+  el.addEventListener('touchstart', press, {passive:false});
+  el.addEventListener('touchend', release, {passive:false});
+  el.addEventListener('touchcancel', release, {passive:false});
+});
+
+/* ANALOG STICKS */
+function setupStick(zoneId, thumbId, side){
+  const zone = document.getElementById(zoneId);
+  const thumb = document.getElementById(thumbId);
+  let dragging = false; let moved = false;
+
+  function updateThumb(dx, dy) {
+    const r = (zone.clientWidth / 2) - (thumb.clientWidth / 2);
+    const dist = Math.min(Math.hypot(dx, dy), r);
+    const angle = Math.atan2(dy, dx);
+    const cx = Math.cos(angle) * dist;
+    const cy = Math.sin(angle) * dist;
+
+    thumb.style.transform = `translate(calc(-50% + ${cx}px), calc(-50% + ${cy}px))`;
+    emit('stick', { side: side, x: cx / r, y: -cy / r });
+  }
+
+  function resetThumb() {
+    thumb.style.transform = 'translate(-50%,-50%)';
+    emit('stick', { side: side, x: 0, y: 0 });
+  }
+
+  function start(x, y) {
+    dragging = true; moved = false;
+    const rect = zone.getBoundingClientRect();
+    updateThumb(x - (rect.left + rect.width / 2), y - (rect.top + rect.height / 2));
+  }
+
+  function move(x, y) {
+    if(!dragging) return;
+    moved = true;
+    const rect = zone.getBoundingClientRect();
+    updateThumb(x - (rect.left + rect.width / 2), y - (rect.top + rect.height / 2));
+  }
+
+  function end() {
+    if(dragging && !moved) {
+      const btnName = side === 'left' ? 'LS' : 'RS';
+      emit('button', { name: btnName, pressed: true });
+      setTimeout(() => { emit('button', { name: btnName, pressed: false }); }, 80);
+    }
+    dragging = false; resetThumb();
+  }
+
+  zone.addEventListener('touchstart', e => { e.preventDefault(); start(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  zone.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  zone.addEventListener('touchend', e => { e.preventDefault(); end(); }, {passive:false});
+  zone.addEventListener('touchcancel', e => { e.preventDefault(); end(); }, {passive:false});
+}
+
+setupStick('stick-left-zone', 'thumb-left', 'left');
+setupStick('stick-right-zone', 'thumb-right', 'right');
+
+document.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+document.addEventListener('gesturestart', e => e.preventDefault());
+</script>
+
+</body>
+</html>
