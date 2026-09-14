@@ -11,479 +11,312 @@
 <title>Touch Controller</title>
 
 <style>
-:root{
-  --bg:#0a0b0f;
-  --surface:rgba(255,255,255,.055);
-  --line:rgba(255,255,255,.12);
-  --text:#eef0f4;
-  --dim:rgba(238,240,244,.42);
-  --green:#4fe3a1;
-  --yellow:#e7c14d;
-  --blue:#4d9be7;
-  --red:#e75d5d;
+:root {
+  --bg: #f4f5f7; /* Light theme background matching the image */
+  --btn-bg: #111111;
+  --btn-border: #2a2a2a;
+  --text: #ffffff;
+  
+  --green: #6bc04b;
+  --yellow: #e4c332;
+  --blue: #3880c4;
+  --red: #d13d3d;
+  
+  --stick-size: clamp(100px, 25vh, 140px);
+  --dpad-size: clamp(100px, 25vh, 140px);
+  --abxy-zone: clamp(120px, 30vh, 160px);
+  --face-btn-size: clamp(35px, 8vh, 45px);
+  --small-btn-size: clamp(28px, 6vh, 36px);
 }
 
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-  touch-action:none;
-  user-select:none;
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
 }
 
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  position:fixed;
-  inset:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-#status{
-  position:fixed;
-  top:max(6px,env(safe-area-inset-top));
-  left:50%;
-  transform:translateX(-50%);
-  z-index:200;
-  padding:4px 10px;
-  border-radius:20px;
-  background:var(--surface);
-  border:1px solid var(--line);
-  font-size:9px;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--dim);
+/* STATUS & CONNECTION (Preserved styling but adapted for light theme) */
+#status {
+  position: fixed;
+  top: max(6px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #555;
 }
 
-#status::before{
-  content:"";
-  display:inline-block;
-  width:5px;
-  height:5px;
-  margin-right:5px;
-  border-radius:50%;
-  background:var(--dim);
+#status::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #555;
 }
 
-#status.connected{
-  color:var(--green);
+#status.connected { color: #2e8b57; }
+#status.connected::before { background: #2e8b57; box-shadow: 0 0 5px #2e8b57; }
+#status.disconnected { color: #b22222; }
+#status.disconnected::before { background: #b22222; }
+
+#connection-panel {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0,0,0,.72);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  touch-action: auto;
 }
 
-#status.connected::before{
-  background:var(--green);
-  box-shadow:0 0 5px var(--green);
+#connection-panel.open { display: flex; }
+
+#connection-card {
+  width: min(360px, 92vw);
+  padding: 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  touch-action: auto;
 }
 
-#status.disconnected{
-  color:var(--red);
+.connection-title { font-size: 13px; font-weight: 800; letter-spacing: .12em; color: #111; }
+.connection-subtitle { margin-top: 7px; font-size: 11px; color: #666; }
+
+#pc-address {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 13px;
+  border-radius: 11px;
+  border: 1px solid #ccc;
+  outline: none;
+  background: #f9f9f9;
+  color: #111;
+  font: 600 14px sans-serif;
+  touch-action: auto;
+  user-select: text;
 }
 
-#status.disconnected::before{
-  background:var(--red);
+.connection-actions { display: flex; gap: 8px; margin-top: 10px; }
+.connection-actions button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 11px;
+  border: 1px solid #ccc;
+  background: #eee;
+  color: #111;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-/* CONNECTION WINDOW */
+#connect-btn { background: rgba(107, 192, 75, 0.2); color: #2e8b57; border-color: #2e8b57; }
+#connection-help { margin-top: 10px; font-size: 9px; color: #666; }
 
-#connection-panel{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:400;
-  background:rgba(0,0,0,.72);
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  touch-action:auto;
+#rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--bg);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+#rotate-overlay p { margin: 0; font-size: 13px; color: #333; }
+@media (orientation: portrait) {
+  #rotate-overlay { display: flex; }
+  #app { display: none; }
 }
 
-#connection-panel.open{
-  display:flex;
+/* APP CONTAINER */
+#app {
+  position: fixed;
+  inset: 0;
+  padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
 
-#connection-card{
-  width:min(360px,92vw);
-  padding:20px;
-  border-radius:18px;
-  background:#15171d;
-  border:1px solid var(--line);
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-  touch-action:auto;
+/* COMMON BUTTON STYLES (Matched to IMG) */
+.btn-round {
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-weight: 800;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 6px rgba(0,0,0,0.3);
 }
 
-.connection-title{
-  font-size:13px;
-  font-weight:800;
-  letter-spacing:.12em;
+.btn-round.active {
+  background: #333;
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
-.connection-subtitle{
-  margin-top:7px;
-  font-size:11px;
-  color:var(--dim);
+/* ANALOG STICKS */
+.stick-zone {
+  position: absolute;
+  width: var(--stick-size);
+  height: var(--stick-size);
+  border-radius: 50%;
+  background: #0a0a0a;
+  box-shadow: inset 0 6px 10px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
 }
 
-#pc-address{
-  width:100%;
-  margin-top:16px;
-  padding:12px 13px;
-  border-radius:11px;
-  border:1px solid var(--line);
-  outline:none;
-  background:#0d0f14;
-  color:var(--text);
-  font:600 14px sans-serif;
-  touch-action:auto;
-  user-select:text;
+.stick-thumb {
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  box-shadow: inset 0 2px 5px rgba(255,255,255,0.1), 0 5px 15px rgba(0,0,0,0.6);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.connection-actions{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
+#stick-left { top: 12%; left: 8%; }
+#stick-right { bottom: 12%; right: 28%; }
+
+/* DPAD (Plus shape matched to IMG with blue center) */
+.dpad {
+  position: absolute;
+  bottom: 12%;
+  left: 28%;
+  width: var(--dpad-size);
+  height: var(--dpad-size);
+  z-index: 20;
 }
 
-.connection-actions button{
-  flex:1;
-  padding:11px;
-  border-radius:11px;
-  border:1px solid var(--line);
-  background:var(--surface);
-  color:var(--text);
-  font-size:11px;
-  font-weight:800;
+.dpad-cross {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(to bottom, transparent 33.33%, var(--btn-bg) 33.33%, var(--btn-bg) 66.66%, transparent 66.66%),
+    linear-gradient(to right, transparent 33.33%, var(--btn-bg) 33.33%, var(--btn-bg) 66.66%, transparent 66.66%);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
 
-#connect-btn{
-  background:rgba(79,227,161,.14);
-  color:var(--green);
-  border-color:rgba(79,227,161,.35);
+.dpad-cross::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20%;
+  height: 20%;
+  background: radial-gradient(circle, rgba(56,128,196,0.8) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-#connection-help{
-  margin-top:10px;
-  font-size:9px;
-  color:var(--dim);
+.dpad-btn {
+  position: absolute;
+  width: 33.33%;
+  height: 33.33%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ROTATE MESSAGE */
-
-#rotate-overlay{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:500;
-  background:var(--bg);
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:14px;
-  text-align:center;
+.dpad-btn.active {
+  background: rgba(255,255,255,0.15);
 }
 
-#rotate-overlay p{
-  margin:0;
-  font-size:13px;
-  color:var(--dim);
+.dpad-up { top: 0; left: 33.33%; border-radius: 8px 8px 0 0; }
+.dpad-down { bottom: 0; left: 33.33%; border-radius: 0 0 8px 8px; }
+.dpad-left { top: 33.33%; left: 0; border-radius: 8px 0 0 8px; }
+.dpad-right { top: 33.33%; right: 0; border-radius: 0 8px 8px 0; }
+
+/* ABXY DIAMOND */
+.face-diamond {
+  position: absolute;
+  top: 12%;
+  right: 5%;
+  width: var(--abxy-zone);
+  height: var(--abxy-zone);
+  z-index: 20;
 }
 
-@media (orientation:portrait){
-  #rotate-overlay{
-    display:flex;
-  }
-
-  #app{
-    display:none;
-  }
+.face-btn {
+  position: absolute;
+  width: var(--face-btn-size);
+  height: var(--face-btn-size);
+  font-size: clamp(16px, 3vh, 22px);
 }
 
-/* MAIN */
+#btn-y { top: 0; left: 50%; transform: translateX(-50%); color: var(--yellow); }
+#btn-a { bottom: 0; left: 50%; transform: translateX(-50%); color: var(--green); }
+#btn-x { left: 0; top: 50%; transform: translateY(-50%); color: var(--blue); }
+#btn-b { right: 0; top: 50%; transform: translateY(-50%); color: var(--red); }
 
-#app{
-  position:fixed;
-  inset:0;
-  padding:
-    max(10px,env(safe-area-inset-top))
-    max(14px,env(safe-area-inset-right))
-    max(10px,env(safe-area-inset-bottom))
-    max(14px,env(safe-area-inset-left));
+/* BUMPERS & TRIGGERS & CENTER BUTTONS (Small Face Buttons) */
+.small-btn {
+  position: absolute;
+  width: var(--small-btn-size);
+  height: var(--small-btn-size);
+  font-size: clamp(9px, 1.5vh, 12px);
+  z-index: 20;
 }
 
-/* SHOULDER BUTTONS */
+/* Left side small buttons */
+#btn-lt { top: 18%; left: 38%; }
+#btn-lb { top: 40%; left: 40%; }
 
-.flat-btn{
-  display:flex;
-  align-items:center;
-  justify-content:center;
+/* Right side small buttons */
+#btn-rt { top: 18%; right: 38%; }
+#btn-rb { top: 40%; right: 40%; }
 
-  width:clamp(62px,9vw,92px);
-  height:clamp(34px,6vh,44px);
-
-  border-radius:999px;
-  background:rgba(255,255,255,.055);
-  border:1px solid var(--line);
-
-  color:rgba(238,240,244,.62);
-  font-size:clamp(10px,1.9vh,13px);
-  font-weight:700;
+/* Center small buttons */
+#btn-back { bottom: 35%; left: 45%; }
+#btn-start { bottom: 35%; right: 45%; }
+#btn-home { 
+  top: max(25px, 6vh); 
+  left: 50%; 
+  transform: translateX(-50%);
+  background: white; 
+  color: var(--green); 
+  border: 2px solid var(--green);
+  font-size: 16px;
 }
 
-.flat-btn.active{
-  background:rgba(79,227,161,.16);
-  color:var(--green);
-  border-color:rgba(79,227,161,.45);
-}
-
-#LT,#LB{
-  position:absolute;
-  left:max(18px,3vw);
-  z-index:20;
-}
-
-#RT,#RB{
-  position:absolute;
-  right:clamp(180px,25vw,280px);
-  z-index:20;
-}
-
-#LT,#RT{
-  top:max(18px,4vh);
-}
-
-#LB,#RB{
-  top:calc(max(18px,4vh) + clamp(42px,7vh,52px));
-}
-
-/* CENTER BUTTONS */
-
-.center-icons{
-  position:absolute;
-  top:max(18px,4vh);
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:12px;
-  z-index:20;
-}
-
-.icon-btn{
-  width:clamp(34px,5vw,46px);
-  height:clamp(34px,5vw,46px);
-  border-radius:11px;
-  background:var(--surface);
-  border:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--dim);
-}
-
-.icon-btn.active{
-  color:var(--green);
-  border-color:rgba(79,227,161,.4);
-  background:rgba(79,227,161,.14);
-}
-
-.icon-btn svg{
-  width:18px;
-  height:18px;
-}
-
-/* ABXY */
-
-.face-diamond{
-  position:absolute;
-  right:max(20px,3vw);
-  top:50%;
-  transform:translateY(-48%);
-  width:clamp(150px,23vh,190px);
-  height:clamp(150px,23vh,190px);
-  z-index:20;
-}
-
-.face-btn{
-  position:absolute;
-  width:clamp(42px,7vh,56px);
-  height:clamp(42px,7vh,56px);
-
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  font-weight:800;
-  font-size:clamp(13px,2.5vh,17px);
-
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.055);
-  color:rgba(238,240,244,.7);
-}
-
-#btn-y{
-  top:0;
-  left:50%;
-  transform:translateX(-50%);
-}
-
-#btn-a{
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-}
-
-#btn-x{
-  left:0;
-  top:50%;
-  transform:translateY(-50%);
-}
-
-#btn-b{
-  right:0;
-  top:50%;
-  transform:translateY(-50%);
-}
-
-#btn-y.active{
-  background:rgba(231,193,77,.22);
-  color:var(--yellow);
-}
-
-#btn-a.active{
-  background:rgba(79,227,161,.22);
-  color:var(--green);
-}
-
-#btn-x.active{
-  background:rgba(77,155,231,.22);
-  color:var(--blue);
-}
-
-#btn-b.active{
-  background:rgba(231,93,93,.22);
-  color:var(--red);
-}
-
-/* DPAD */
-
-.dpad{
-  position:absolute;
-  left:max(18px,3vw);
-  bottom:max(20px,4vh);
-
-  width:clamp(138px,22vh,170px);
-  height:clamp(138px,22vh,170px);
-
-  z-index:20;
-}
-
-.dpad-btn{
-  position:absolute;
-  background:rgba(255,255,255,.055);
-  border:1px solid var(--line);
-  color:rgba(238,240,244,.55);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  font-size:clamp(14px,2.8vh,18px);
-
-  width:38%;
-  height:38%;
-}
-
-.dpad-btn.active{
-  background:rgba(79,227,161,.16);
-  color:var(--green);
-  border-color:rgba(79,227,161,.4);
-}
-
-.dpad-up{
-  top:0;
-  left:31%;
-  border-radius:12px 12px 4px 4px;
-}
-
-.dpad-down{
-  bottom:0;
-  left:31%;
-  border-radius:4px 4px 12px 12px;
-}
-
-.dpad-left{
-  top:31%;
-  left:0;
-  border-radius:12px 4px 4px 12px;
-}
-
-.dpad-right{
-  top:31%;
-  right:0;
-  border-radius:4px 12px 12px 4px;
-}
-
-/* RIGHT STICK */
-
-.stick-zone{
-  position:absolute;
-  right:max(24px,4vw);
-  bottom:max(18px,4vh);
-
-  width:clamp(180px,32vh,240px);
-  height:clamp(180px,32vh,240px);
-
-  border-radius:50%;
-  background:rgba(255,255,255,.055);
-  border:1px solid rgba(255,255,255,.14);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  z-index:20;
-}
-
-.stick-zone.dragging{
-  border-color:rgba(79,227,161,.42);
-}
-
-.stick-thumb{
-  width:40%;
-  height:40%;
-  border-radius:50%;
-
-  background:rgba(255,255,255,.09);
-  border:1px solid rgba(255,255,255,.14);
-
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-}
-
-.stick-zone.dragging .stick-thumb{
-  background:rgba(79,227,161,.22);
-  border-color:rgba(79,227,161,.5);
-}
-
-@media(max-height:430px){
-  .face-diamond{
-    width:140px;
-    height:140px;
-  }
-
-  .stick-zone{
-    width:170px;
-    height:170px;
-  }
-
-  .dpad{
-    width:130px;
-    height:130px;
-  }
+.icon-svg {
+  width: 50%;
+  height: 50%;
+  stroke: white;
 }
 </style>
 </head>
@@ -494,37 +327,14 @@ html,body{
 
 <div id="connection-panel">
   <div id="connection-card">
-
-    <div class="connection-title">
-      CONNECT TO PC
-    </div>
-
-    <div class="connection-subtitle">
-      Enter your PC's local IP address and port.
-    </div>
-
-    <input
-      id="pc-address"
-      type="text"
-      inputmode="url"
-      autocomplete="off"
-      placeholder="192.168.1.100:5000"
-    >
-
+    <div class="connection-title">CONNECT TO PC</div>
+    <div class="connection-subtitle">Enter your PC's local IP address and port.</div>
+    <input id="pc-address" type="text" inputmode="url" autocomplete="off" placeholder="192.168.1.100:5000">
     <div class="connection-actions">
-      <button id="connect-btn" type="button">
-        CONNECT
-      </button>
-
-      <button id="close-connect-btn" type="button">
-        CLOSE
-      </button>
+      <button id="connect-btn" type="button">CONNECT</button>
+      <button id="close-connect-btn" type="button">CLOSE</button>
     </div>
-
-    <div id="connection-help">
-      Phone and PC must be on the same Wi-Fi network.
-    </div>
-
+    <div id="connection-help">Phone and PC must be on the same Wi-Fi network.</div>
   </div>
 </div>
 
@@ -534,961 +344,320 @@ html,body{
 
 <div id="app">
 
-  <!-- LEFT SHOULDER -->
-
-  <div class="flat-btn" data-btn="LT" id="LT">LT</div>
-  <div class="flat-btn" data-btn="LB" id="LB">LB</div>
-
-
-  <!-- CENTER BUTTONS -->
-
-  <div class="center-icons">
-
-    <div class="icon-btn" data-btn="BACK" id="BACK">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      >
-        <rect x="3" y="6" width="18" height="12" rx="2"/>
-      </svg>
-    </div>
-
-    <div class="icon-btn" data-btn="START" id="START">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      >
-        <line x1="4" y1="7" x2="20" y2="7"/>
-        <line x1="4" y1="12" x2="20" y2="12"/>
-        <line x1="4" y1="17" x2="20" y2="17"/>
-      </svg>
-    </div>
-
+  <!-- LEFT STICK -->
+  <div class="stick-zone" id="stick-left">
+    <div class="stick-thumb" id="thumb-left"></div>
   </div>
-
-
-  <!-- RIGHT SHOULDER -->
-
-  <div class="flat-btn" data-btn="RT" id="RT">RT</div>
-  <div class="flat-btn" data-btn="RB" id="RB">RB</div>
-
-
-  <!-- ABXY -->
-
-  <div class="face-diamond">
-
-    <div class="face-btn" id="btn-y" data-btn="Y">Y</div>
-
-    <div class="face-btn" id="btn-a" data-btn="A">A</div>
-
-    <div class="face-btn" id="btn-x" data-btn="X">X</div>
-
-    <div class="face-btn" id="btn-b" data-btn="B">B</div>
-
-  </div>
-
 
   <!-- DPAD -->
-
   <div class="dpad">
-
-    <div
-      class="dpad-btn dpad-up"
-      data-btn="DPAD_UP"
-    >▲</div>
-
-    <div
-      class="dpad-btn dpad-down"
-      data-btn="DPAD_DOWN"
-    >▼</div>
-
-    <div
-      class="dpad-btn dpad-left"
-      data-btn="DPAD_LEFT"
-    >◀</div>
-
-    <div
-      class="dpad-btn dpad-right"
-      data-btn="DPAD_RIGHT"
-    >▶</div>
-
+    <div class="dpad-cross">
+      <div class="dpad-btn dpad-up" data-btn="DPAD_UP"></div>
+      <div class="dpad-btn dpad-down" data-btn="DPAD_DOWN"></div>
+      <div class="dpad-btn dpad-left" data-btn="DPAD_LEFT"></div>
+      <div class="dpad-btn dpad-right" data-btn="DPAD_RIGHT"></div>
+    </div>
   </div>
 
+  <!-- LEFT BUMPERS / TRIGGERS -->
+  <div class="btn-round small-btn" id="btn-lt" data-btn="LT">LT</div>
+  <div class="btn-round small-btn" id="btn-lb" data-btn="LB">LB</div>
+
+  <!-- CENTER BUTTONS -->
+  <div class="btn-round small-btn" id="btn-back" data-btn="BACK">
+    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke-width="2">
+      <rect x="3" y="6" width="18" height="12" rx="2"/>
+    </svg>
+  </div>
+  <div class="btn-round small-btn" id="btn-home" data-btn="HOME">X</div>
+  <div class="btn-round small-btn" id="btn-start" data-btn="START">
+    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+      <line x1="4" y1="7" x2="20" y2="7"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="17" x2="20" y2="17"/>
+    </svg>
+  </div>
+
+  <!-- RIGHT BUMPERS / TRIGGERS -->
+  <div class="btn-round small-btn" id="btn-rt" data-btn="RT">RT</div>
+  <div class="btn-round small-btn" id="btn-rb" data-btn="RB">RB</div>
 
   <!-- RIGHT STICK -->
+  <div class="stick-zone" id="stick-right">
+    <div class="stick-thumb" id="thumb-right"></div>
+  </div>
 
-  <div
-    class="stick-zone"
-    id="stick-right"
-  >
-    <div
-      class="stick-thumb"
-      id="thumb-right"
-    ></div>
+  <!-- ABXY -->
+  <div class="face-diamond">
+    <div class="btn-round face-btn" id="btn-y" data-btn="Y">Y</div>
+    <div class="btn-round face-btn" id="btn-x" data-btn="X">X</div>
+    <div class="btn-round face-btn" id="btn-a" data-btn="A">A</div>
+    <div class="btn-round face-btn" id="btn-b" data-btn="B">B</div>
   </div>
 
 </div>
 
-
-<!--
-  IMPORTANT:
-  Keep socket.io.min.js in the SAME folder as index.html.
--->
-
+<!-- socket.io library -->
 <script src="./socket.io.min.js"></script>
 
 <script>
-
-const statusEl =
-  document.getElementById('status');
-
-const connectionPanel =
-  document.getElementById('connection-panel');
-
-const pcAddressInput =
-  document.getElementById('pc-address');
-
-const connectBtn =
-  document.getElementById('connect-btn');
-
-const closeConnectBtn =
-  document.getElementById('close-connect-btn');
-
+const statusEl = document.getElementById('status');
+const connectionPanel = document.getElementById('connection-panel');
+const pcAddressInput = document.getElementById('pc-address');
+const connectBtn = document.getElementById('connect-btn');
+const closeConnectBtn = document.getElementById('close-connect-btn');
 let socket = null;
-
 
 /* ---------------------------
    SERVER ADDRESS
 ---------------------------- */
-
 function normalizeServerAddress(value){
-
   value = (value || '').trim();
-
-  if(!value){
-    return '';
-  }
-
+  if(!value) return '';
   if(!/^https?:\/\//i.test(value)){
     value = 'http://' + value;
   }
-
-  try{
-
+  try {
     const u = new URL(value);
-
-    if(!u.port){
-      u.port = '5000';
-    }
-
+    if(!u.port) u.port = '5000';
     return u.origin;
-
-  }catch{
-
+  } catch {
     return '';
-
   }
-
 }
-
 
 /* ---------------------------
    CONNECTION STATUS
 ---------------------------- */
-
 function setOffline(){
-
   statusEl.textContent = 'offline';
   statusEl.className = 'disconnected';
-
 }
 
-
 function connectToPC(){
+  const address = normalizeServerAddress(pcAddressInput.value);
 
-  const address =
-    normalizeServerAddress(
-      pcAddressInput.value
-    );
-
-  if(
-    !address ||
-    typeof io !== 'function'
-  ){
-
+  if(!address || typeof io !== 'function'){
     statusEl.textContent = 'set PC';
     statusEl.className = 'disconnected';
-
     connectionPanel.classList.add('open');
-
     return;
   }
 
-
-  localStorage.setItem(
-    'controller_pc_address',
-    address
-  );
-
+  localStorage.setItem('controller_pc_address', address);
 
   if(socket){
-
-    try{
-      socket.disconnect();
-    }catch(_){}
-
+    try{ socket.disconnect(); } catch(_){}
   }
-
 
   statusEl.textContent = 'connecting';
   statusEl.className = '';
 
-
   socket = io(address, {
-
-    transports:[
-      'websocket',
-      'polling'
-    ],
-
-    reconnection:true,
-
-    reconnectionAttempts:Infinity,
-
-    timeout:5000
-
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    timeout: 5000
   });
 
+  socket.on('connect', () => {
+    statusEl.textContent = 'connected';
+    statusEl.className = 'connected';
+    connectionPanel.classList.remove('open');
+  });
 
-  socket.on(
-    'connect',
-    () => {
+  socket.on('disconnect', setOffline);
 
-      statusEl.textContent =
-        'connected';
-
-      statusEl.className =
-        'connected';
-
-      connectionPanel.classList.remove(
-        'open'
-      );
-
-    }
-  );
-
-
-  socket.on(
-    'disconnect',
-    setOffline
-  );
-
-
-  socket.on(
-    'connect_error',
-    () => {
-
-      statusEl.textContent =
-        'check PC';
-
-      statusEl.className =
-        'disconnected';
-
-    }
-  );
-
+  socket.on('connect_error', () => {
+    statusEl.textContent = 'check PC';
+    statusEl.className = 'disconnected';
+  });
 }
-
 
 /* ---------------------------
    CONNECTION WINDOW
 ---------------------------- */
-
 function openConnectionPanel(){
-
-  pcAddressInput.value =
-    localStorage.getItem(
-      'controller_pc_address'
-    ) || '';
-
-  connectionPanel.classList.add(
-    'open'
-  );
-
-  setTimeout(
-    () => pcAddressInput.focus(),
-    50
-  );
-
+  pcAddressInput.value = localStorage.getItem('controller_pc_address') || '';
+  connectionPanel.classList.add('open');
+  setTimeout(() => pcAddressInput.focus(), 50);
 }
 
-
-connectBtn.addEventListener(
-  'click',
-  connectToPC
-);
-
-
-closeConnectBtn.addEventListener(
-  'click',
-  () => {
-    connectionPanel.classList.remove(
-      'open'
-    );
-  }
-);
-
-
-pcAddressInput.addEventListener(
-  'keydown',
-  e => {
-
-    if(e.key === 'Enter'){
-      connectToPC();
-    }
-
-  }
-);
-
-
-statusEl.addEventListener(
-  'click',
-  openConnectionPanel
-);
-
+connectBtn.addEventListener('click', connectToPC);
+closeConnectBtn.addEventListener('click', () => connectionPanel.classList.remove('open'));
+pcAddressInput.addEventListener('keydown', e => { if(e.key === 'Enter') connectToPC(); });
+statusEl.addEventListener('click', openConnectionPanel);
 
 /* ---------------------------
    AUTO CONNECT
 ---------------------------- */
-
-const savedAddress =
-  localStorage.getItem(
-    'controller_pc_address'
-  );
-
-
+const savedAddress = localStorage.getItem('controller_pc_address');
 if(savedAddress){
-
-  pcAddressInput.value =
-    savedAddress;
-
+  pcAddressInput.value = savedAddress;
   connectToPC();
-
-}else{
-
-  statusEl.textContent =
-    'set PC';
-
-  statusEl.className =
-    'disconnected';
-
+} else {
+  statusEl.textContent = 'set PC';
+  statusEl.className = 'disconnected';
 }
-
 
 /* ---------------------------
    SAFE EMIT
 ---------------------------- */
-
-function emit(event,data){
-
-  if(
-    socket &&
-    socket.connected
-  ){
-
-    socket.emit(
-      event,
-      data
-    );
-
+function emit(event, data){
+  if(socket && socket.connected){
+    socket.emit(event, data);
   }
-
 }
-
 
 /* ---------------------------
    NORMAL BUTTONS
 ---------------------------- */
-
-function wireButton(
-  el,
-  sendName
-){
-
+function wireButton(el, sendName){
   const press = e => {
-
     e.preventDefault();
-
-    el.classList.add(
-      'active'
-    );
-
-    emit(
-      'button',
-      {
-        name:sendName,
-        pressed:true
-      }
-    );
-
+    el.classList.add('active');
+    emit('button', { name: sendName, pressed: true });
   };
-
-
   const release = e => {
-
     e.preventDefault();
-
-    el.classList.remove(
-      'active'
-    );
-
-    emit(
-      'button',
-      {
-        name:sendName,
-        pressed:false
-      }
-    );
-
+    el.classList.remove('active');
+    emit('button', { name: sendName, pressed: false });
   };
 
-
-  el.addEventListener(
-    'touchstart',
-    press,
-    {passive:false}
-  );
-
-  el.addEventListener(
-    'touchend',
-    release,
-    {passive:false}
-  );
-
-  el.addEventListener(
-    'touchcancel',
-    release,
-    {passive:false}
-  );
-
-  el.addEventListener(
-    'mousedown',
-    press
-  );
-
-  el.addEventListener(
-    'mouseup',
-    release
-  );
-
-  el.addEventListener(
-    'mouseleave',
-    release
-  );
-
+  el.addEventListener('touchstart', press, {passive:false});
+  el.addEventListener('touchend', release, {passive:false});
+  el.addEventListener('touchcancel', release, {passive:false});
+  el.addEventListener('mousedown', press);
+  el.addEventListener('mouseup', release);
+  el.addEventListener('mouseleave', release);
 }
 
+document.querySelectorAll('[data-btn]').forEach(el => {
+  const name = el.dataset.btn;
 
-document
-  .querySelectorAll('[data-btn]')
-  .forEach(el => {
+  /* TRIGGERS */
+  if (name === 'LT' || name === 'RT') {
+    const side = name === 'LT' ? 'left' : 'right';
+    const press = e => {
+      e.preventDefault();
+      el.classList.add('active');
+      emit('trigger', { side: side, value: 1.0 });
+    };
+    const release = e => {
+      e.preventDefault();
+      el.classList.remove('active');
+      emit('trigger', { side: side, value: 0.0 });
+    };
 
-    const name =
-      el.dataset.btn;
-
-
-    /* TRIGGERS */
-
-    if(
-      name === 'LT' ||
-      name === 'RT'
-    ){
-
-      const side =
-        name === 'LT'
-          ? 'left'
-          : 'right';
-
-
-      const press = e => {
-
-        e.preventDefault();
-
-        el.classList.add(
-          'active'
-        );
-
-        emit(
-          'trigger',
-          {
-            side:side,
-            value:1.0
-          }
-        );
-
-      };
-
-
-      const release = e => {
-
-        e.preventDefault();
-
-        el.classList.remove(
-          'active'
-        );
-
-        emit(
-          'trigger',
-          {
-            side:side,
-            value:0.0
-          }
-        );
-
-      };
-
-
-      el.addEventListener(
-        'touchstart',
-        press,
-        {passive:false}
-      );
-
-      el.addEventListener(
-        'touchend',
-        release,
-        {passive:false}
-      );
-
-      el.addEventListener(
-        'touchcancel',
-        release,
-        {passive:false}
-      );
-
-      el.addEventListener(
-        'mousedown',
-        press
-      );
-
-      el.addEventListener(
-        'mouseup',
-        release
-      );
-
-      el.addEventListener(
-        'mouseleave',
-        release
-      );
-
-    }else{
-
-      wireButton(
-        el,
-        name
-      );
-
-    }
-
-  });
-
+    el.addEventListener('touchstart', press, {passive:false});
+    el.addEventListener('touchend', release, {passive:false});
+    el.addEventListener('touchcancel', release, {passive:false});
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+  } else {
+    wireButton(el, name);
+  }
+});
 
 /* ---------------------------
-   RIGHT ANALOG STICK
+   ANALOG STICKS
 ---------------------------- */
-
-function setupStick(
-  zoneId,
-  thumbId,
-  side
-){
-
-  const zone =
-    document.getElementById(
-      zoneId
-    );
-
-  const thumb =
-    document.getElementById(
-      thumbId
-    );
-
-
+function setupStick(zoneId, thumbId, side){
+  const zone = document.getElementById(zoneId);
+  const thumb = document.getElementById(thumbId);
   let dragging = false;
   let moved = false;
 
+  function radius() { return zone.clientWidth / 2; }
 
-  function radius(){
+  function updateThumb(dx, dy) {
+    const r = radius();
+    const dist = Math.min(Math.hypot(dx, dy), r - 8);
+    const angle = Math.atan2(dy, dx);
+    const cx = Math.cos(angle) * dist;
+    const cy = Math.sin(angle) * dist;
 
-    return zone.clientWidth / 2;
-
+    thumb.style.transform = `translate(calc(-50% + ${cx}px), calc(-50% + ${cy}px))`;
+    
+    emit('stick', {
+      side: side,
+      x: cx / (r - 8),
+      y: -cy / (r - 8)
+    });
   }
 
-
-  function updateThumb(
-    dx,
-    dy
-  ){
-
-    const r =
-      radius();
-
-
-    const dist =
-      Math.min(
-        Math.hypot(dx,dy),
-        r - 8
-      );
-
-
-    const angle =
-      Math.atan2(
-        dy,
-        dx
-      );
-
-
-    const cx =
-      Math.cos(angle) * dist;
-
-    const cy =
-      Math.sin(angle) * dist;
-
-
-    thumb.style.transform =
-      `translate(
-        calc(-50% + ${cx}px),
-        calc(-50% + ${cy}px)
-      )`;
-
-
-    emit(
-      'stick',
-      {
-        side:side,
-
-        x:
-          cx / (r - 8),
-
-        y:
-          -cy / (r - 8)
-      }
-    );
-
+  function resetThumb() {
+    thumb.style.transform = 'translate(-50%,-50%)';
+    emit('stick', { side: side, x: 0, y: 0 });
   }
 
-
-  function resetThumb(){
-
-    thumb.style.transform =
-      'translate(-50%,-50%)';
-
-
-    emit(
-      'stick',
-      {
-        side:side,
-        x:0,
-        y:0
-      }
-    );
-
-  }
-
-
-  function getRelative(
-    clientX,
-    clientY
-  ){
-
-    const rect =
-      zone.getBoundingClientRect();
-
-
+  function getRelative(clientX, clientY) {
+    const rect = zone.getBoundingClientRect();
     return {
-
-      dx:
-        clientX -
-        (
-          rect.left +
-          rect.width / 2
-        ),
-
-      dy:
-        clientY -
-        (
-          rect.top +
-          rect.height / 2
-        )
-
+      dx: clientX - (rect.left + rect.width / 2),
+      dy: clientY - (rect.top + rect.height / 2)
     };
-
   }
 
-
-  function start(
-    x,
-    y
-  ){
-
+  function start(x, y) {
     dragging = true;
     moved = false;
-
-    zone.classList.add(
-      'dragging'
-    );
-
-
-    const {
-      dx,
-      dy
-    } =
-      getRelative(
-        x,
-        y
-      );
-
-
-    updateThumb(
-      dx,
-      dy
-    );
-
+    zone.classList.add('dragging');
+    const { dx, dy } = getRelative(x, y);
+    updateThumb(dx, dy);
   }
 
-
-  function move(
-    x,
-    y
-  ){
-
-    if(!dragging){
-      return;
-    }
-
-
+  function move(x, y) {
+    if(!dragging) return;
     moved = true;
-
-
-    const {
-      dx,
-      dy
-    } =
-      getRelative(
-        x,
-        y
-      );
-
-
-    updateThumb(
-      dx,
-      dy
-    );
-
+    const { dx, dy } = getRelative(x, y);
+    updateThumb(dx, dy);
   }
 
-
-  function end(){
-
-    if(
-      dragging &&
-      !moved
-    ){
-
-      const btnName =
-        side === 'left'
-          ? 'LS'
-          : 'RS';
-
-
-      emit(
-        'button',
-        {
-          name:btnName,
-          pressed:true
-        }
-      );
-
-
-      setTimeout(
-        () => {
-
-          emit(
-            'button',
-            {
-              name:btnName,
-              pressed:false
-            }
-          );
-
-        },
-        80
-      );
-
+  function end() {
+    if(dragging && !moved) {
+      const btnName = side === 'left' ? 'LS' : 'RS';
+      emit('button', { name: btnName, pressed: true });
+      setTimeout(() => { emit('button', { name: btnName, pressed: false }); }, 80);
     }
-
-
     dragging = false;
-
-    zone.classList.remove(
-      'dragging'
-    );
-
+    zone.classList.remove('dragging');
     resetThumb();
-
   }
 
+  zone.addEventListener('touchstart', e => {
+    e.preventDefault();
+    start(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive:false});
 
-  zone.addEventListener(
-    'touchstart',
-    e => {
+  zone.addEventListener('touchmove', e => {
+    e.preventDefault();
+    move(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive:false});
 
-      e.preventDefault();
-
-      const t =
-        e.touches[0];
-
-      start(
-        t.clientX,
-        t.clientY
-      );
-
-    },
-    {passive:false}
-  );
-
-
-  zone.addEventListener(
-    'touchmove',
-    e => {
-
-      e.preventDefault();
-
-      const t =
-        e.touches[0];
-
-      move(
-        t.clientX,
-        t.clientY
-      );
-
-    },
-    {passive:false}
-  );
-
-
-  zone.addEventListener(
-    'touchend',
-    e => {
-
-      e.preventDefault();
-
-      end();
-
-    },
-    {passive:false}
-  );
-
-
-  zone.addEventListener(
-    'touchcancel',
-    e => {
-
-      e.preventDefault();
-
-      end();
-
-    },
-    {passive:false}
-  );
-
-
-  zone.addEventListener(
-    'mousedown',
-    e => {
-
-      start(
-        e.clientX,
-        e.clientY
-      );
-
-    }
-  );
-
-
-  window.addEventListener(
-    'mousemove',
-    e => {
-
-      if(dragging){
-
-        move(
-          e.clientX,
-          e.clientY
-        );
-
-      }
-
-    }
-  );
-
-
-  window.addEventListener(
-    'mouseup',
-    () => {
-
-      if(dragging){
-        end();
-      }
-
-    }
-  );
-
+  zone.addEventListener('touchend', e => { e.preventDefault(); end(); }, {passive:false});
+  zone.addEventListener('touchcancel', e => { e.preventDefault(); end(); }, {passive:false});
+  zone.addEventListener('mousedown', e => { start(e.clientX, e.clientY); });
+  
+  window.addEventListener('mousemove', e => { if(dragging) move(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { if(dragging) end(); });
 }
 
-
-setupStick(
-  'stick-right',
-  'thumb-right',
-  'right'
-);
-
+/* Initialize BOTH sticks to map reference image perfectly */
+setupStick('stick-left', 'thumb-left', 'left');
+setupStick('stick-right', 'thumb-right', 'right');
 
 /* ---------------------------
    PREVENT PAGE MOVEMENT
 ---------------------------- */
-
-document.addEventListener(
-  'touchmove',
-  e => e.preventDefault(),
-  {passive:false}
-);
-
-
-document.addEventListener(
-  'gesturestart',
-  e => e.preventDefault()
-);
-
+document.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* TRY LANDSCAPE */
-
-if(
-  screen.orientation &&
-  screen.orientation.lock
-){
-
-  screen.orientation
-    .lock('landscape')
-    .catch(() => {});
-
+if(screen.orientation && screen.orientation.lock) {
+  screen.orientation.lock('landscape').catch(() => {});
 }
-
 </script>
 
 </body>
